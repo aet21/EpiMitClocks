@@ -1,0 +1,18 @@
+Package: EpiMitClocks
+Type: Package
+Title: Epigenetic mitotic clocks
+Version: 0.1.0
+Author: Tianyu Zhu, Andrew E. Teschendorff
+Maintainer: Tianyu Zhu <zhutianyu2018@sinh.ac.cn>
+Description: EpiMitClocks is an R-package for estimating mitotic age in a tissue.
+Date: 2023-4-1
+Depends: R (>= 4.1)
+License: GPL-2
+Encoding: UTF-8
+LazyData: true
+VignetteBuilder: knitr
+Suggests: BiocStyle, knitr, rmarkdown
+RoxygenNote: 7.2.1
+Roxygen: list(markdown = TRUE)
+NeedsCompilation: no
+Packaged: 2023-04-27 08:01:10 UTC; zhutianyu1

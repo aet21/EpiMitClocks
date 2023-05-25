@@ -1,0 +1,205 @@
+---
+title: "Introduction to EpiMitClocks"
+author:
+- name: Tianyu Zhu
+  affiliation: Shanghai Institute of Nutrition and Health, CAS
+  email: zhutianyu2018@sinh.ac.cn
+- name: Andrew E. Teschendorff
+  affiliation: Shanghai Institute of Nutrition and Health, CAS
+  email: andrew@sinh.ac.cn
+package: EpiMitClocks
+output:
+  BiocStyle::html_document
+abstract: |
+  EpiMitClocks is an R-package for estimating the mitotic age in a tissue. EpiMitClocks implements 9 mitotic clocks, which are epiTOC1 (Yang et al. 2016), epiTOC2 (Teschendorff 2020), epiTOC3, stemTOC, stemTOCvitro, HypoClock (Teschendorff 2020), RepliTali (Endicott et al. 2022), EpiCMIT_hyper and EpiCMIT_hypo (Duran-Ferrer et al. 2020).
+vignette: |
+  %\VignetteIndexEntry{Vignette Title}
+  %\VignetteEngine{knitr::rmarkdown}
+  %\VignetteEncoding{UTF-8}
+---
+
+# Motivation and Background
+DNA methylation changes that accrue in the stem cell pool of an adult tissue in line with the cumulative number of cell divisions may contribute to the observed variation in cancer risk among tissues and individuals. Thus, the construction of epigenetic “mitotic” clocks that can measure the lifetime number of stem cell divisions is of paramount interest. In recent years, a few epigenetic mitotic clocks have been developed. The EpiMitClocks R-package implements the most widely used mitotic clocks. Some are based on age-associated hypermethylated CpGs (stemTOC, stemTOCvitro, epiTOC3, epiTOC2, epiTOC1, EpiCMIT_hyper), others based on hypomethylated CpGs (HypoClock, RepliTali, EpiCMIT_hypo). To illustrate the use of EpiMitClocks, we focus on a lung precancerous lesions dataset and TCGA Liver hepatocellular carcinoma (LIHC) dataset as tutorial examples. 
+
+# Tutorial Example 1: Lung pre-cancerous lesions
+
+## Loading the lung pre-cancerous lesions dataset
+This is an Illumina 450k dataset encompassing 21 normal lung tissue samples and 35 lung carcinoma in situ (LCIS) samples, of which 22 progressed to an invasive lung cancer (LC). Here we explore the correlation between mitotic age and cancer state with linear model, treating N, LCIS, and LC as ordinal variable (1,2,3) and adjusting for age.
+```{r}
+library(EpiMitClocks)
+library(ggplot2)
+library(ggpubr)
+library(gridExtra)
+data("LungInv")
+my_comparisons <- list(c("N\nN=21", "LCIS\nN=13"), c("LCIS\nN=13", "LCIS->LC\nN=22"))
+table(df$Group)
+```
+
+## Estimation of epigenetic mitotic age
+Mitotic age estimation of all the clocks is implemented in a general function *EpiMitClocks*. The required input is a DNAm beta value matrix with rows labeling Illumina 450k/EPIC CpGs and columns labeling samples. 
+```{r}
+EpiMitClocks.o<-EpiMitClocks(data.m = bmiq.m,ages.v = df$Age)
+```
+
+
+**epiTOC1 score**
+
+The epiTOC1 score is calculated as the average beta value of 385 CpGs described in Yang et al. 2014. 
+```{r}
+df$score<-EpiMitClocks.o$epiTOC1
+y<-summary(lm(df$score~df$num+df$Age))$coefficients[2,4]
+ggplot(df,aes(x=Group,y=score,fill=Group))+guides(fill='none')+
+  geom_boxplot()+theme_bw()+
+  scale_x_discrete(limits=c('N\nN=21','LCIS\nN=13','LCIS->LC\nN=22'))+
+  stat_compare_means(method='wilcox.test',comparisons = my_comparisons)+
+  xlab('')+ylab('epiTOC1')+
+  annotate('text',x=2,y=0.3,label=paste0('P(Age-adjusted)=',signif(y,2)))
+```
+
+**epiTOC2 score**
+
+epiTOC2 can estimate the cumulative number of stem cell divisions in a tissue (Teschendorff 2020), which is based on 163 age-associated hypermethylated CpGs. The function will return the estimated cumulative number of stem-cell divisions (tnsc) and the average lifetime intrinsic rate of stem-cell division (irS, if age is provided).
+```{r}
+df$score<-EpiMitClocks.o$epiTOC2$irS
+y<-summary(lm(df$score~df$num+df$Age))$coefficients[2,4]
+ggplot(df,aes(x=Group,y=score,fill=Group))+guides(fill='none')+
+  geom_boxplot()+theme_bw()+
+  scale_x_discrete(limits=c('N\nN=21','LCIS\nN=13','LCIS->LC\nN=22'))+
+  stat_compare_means(method='wilcox.test',comparisons = my_comparisons)+
+  xlab('')+ylab('epiTOC2')+
+  annotate('text',x=2,y=220,label=paste0('P(Age-adjusted)=',signif(y,2)))
+```
+
+**epiTOC3 score**
+
+epiTOC3 can estimate the cumulative number of stem cell divisions in a tissue, which is based on 170 population doubling associated hypermethylated CpGs. The function will return the estimated cumulative number of stem-cell divisions (tnsc), the average lifetime intrinsic rate of stem-cell division (irS, if age is provided), and the simple average over 170 epiTOC3 CpGs.
+```{r}
+df$score<-EpiMitClocks.o$epiTOC3$irS
+y<-summary(lm(df$score~df$num+df$Age))$coefficients[2,4]
+ggplot(df,aes(x=Group,y=score,fill=Group))+guides(fill='none')+
+  geom_boxplot()+theme_bw()+
+  scale_x_discrete(limits=c('N\nN=21','LCIS\nN=13','LCIS->LC\nN=22'))+
+  stat_compare_means(method='wilcox.test',comparisons = my_comparisons)+
+  xlab('')+ylab('epiTOC3')+
+  annotate('text',x=2,y=150,label=paste0('P(Age-adjusted)=',signif(y,2)))
+```
+
+**stemTOCvitro score**
+
+The stemTOCvitro score is calculated as the 0.95 upper quantile of 629 population doubling associated hypermethylated CpGs. 
+```{r}
+df$score<-EpiMitClocks.o$stemTOCvitro
+y<-summary(lm(df$score~df$num+df$Age))$coefficients[2,4]
+ggplot(df,aes(x=Group,y=score,fill=Group))+guides(fill='none')+
+  geom_boxplot()+theme_bw()+
+  scale_x_discrete(limits=c('N\nN=21','LCIS\nN=13','LCIS->LC\nN=22'))+
+  stat_compare_means(method='wilcox.test',comparisons = my_comparisons)+
+  xlab('')+ylab('stemTOCvitro')+
+  annotate('text',x=2,y=0.75,label=paste0('P(Age-adjusted)=',signif(y,2)))
+```
+
+**stemTOC score**
+
+The stemTOC score is calculated as the 0.95 upper quantile of 371 population doubling associated hypermethylated CpGs, further filtered with in-vivo datasets compared to stemTOCvitro CpGs.
+```{r}
+df$score<-EpiMitClocks.o$stemTOC
+y<-summary(lm(df$score~df$num+df$Age))$coefficients[2,4]
+ggplot(df,aes(x=Group,y=score,fill=Group))+guides(fill='none')+
+  geom_boxplot()+theme_bw()+
+  scale_x_discrete(limits=c('N\nN=21','LCIS\nN=13','LCIS->LC\nN=22'))+
+  stat_compare_means(method='wilcox.test',comparisons = my_comparisons)+
+  xlab('')+ylab('stemTOC')+
+  annotate('text',x=2,y=0.75,label=paste0('P(Age-adjusted)=',signif(y,2)))
+```
+
+
+**HypoClock score** 
+
+The HypoClock is based on hypomethylation at solo-WCGW sites. The score is calculated as one minus average DNAm beta value of the 678 solo-WCGWs. 
+```{r}
+df$score<-EpiMitClocks.o$HypoClock
+y<-summary(lm(df$score~df$num+df$Age))$coefficients[2,4]
+ggplot(df,aes(x=Group,y=score,fill=Group))+guides(fill='none')+
+  geom_boxplot()+theme_bw()+
+  scale_x_discrete(limits=c('N\nN=21','LCIS\nN=13','LCIS->LC\nN=22'))+
+  stat_compare_means(method='wilcox.test',comparisons = my_comparisons)+
+  xlab('')+ylab('HypoClock')+
+  annotate('text',x=2,y=0.4,label=paste0('P(Age-adjusted)=',signif(y,2)))
+```
+
+**RepliTali score**
+
+The RepliTali model is based on 87 population doubling associated hypomethylated CpGs (Endicott et al. 2022). 
+```{r}
+df$score<-EpiMitClocks.o$RepliTali
+y<-summary(lm(df$score~df$num+df$Age))$coefficients[2,4]
+ggplot(df,aes(x=Group,y=score,fill=Group))+guides(fill='none')+
+  geom_boxplot()+theme_bw()+
+  scale_x_discrete(limits=c('N\nN=21','LCIS\nN=13','LCIS->LC\nN=22'))+
+  stat_compare_means(method='wilcox.test',comparisons = my_comparisons)+
+  xlab('')+ylab('RepliTali')+
+  annotate('text',x=2,y=130,label=paste0('P(Age-adjusted)=',signif(y,2)))
+```
+
+**EpiCMIT_hyper score**
+
+EpiCMIT_hyper score is based on 184 age-associated hypermethylated CpGs. The score is calculated as average beta value of EpiCMIT_hyper CpGs.
+```{r}
+df$score<-EpiMitClocks.o$EpiCMIT_Hyper
+y<-summary(lm(df$score~df$num+df$Age))$coefficients[2,4]
+ggplot(df,aes(x=Group,y=score,fill=Group))+guides(fill='none')+
+  geom_boxplot()+theme_bw()+
+  scale_x_discrete(limits=c('N\nN=21','LCIS\nN=13','LCIS->LC\nN=22'))+
+  stat_compare_means(method='wilcox.test',comparisons = my_comparisons)+
+  xlab('')+ylab('EpiCMIT_hyper')+
+  annotate('text',x=2,y=0.58,label=paste0('P(Age-adjusted)=',signif(y,2)))
+```
+**EpiCMIT-hypo score**
+
+EpiCMIT_hypo score is based on 1164 hypomethylated CpGs. EpiCMIT_hypo score is calculated as 1-meanbeta(EpiCMIT_hypo CpGs).
+```{r}
+df$score<-EpiMitClocks.o$EpiCMIT_Hypo
+y<-summary(lm(df$score~df$num+df$Age))$coefficients[2,4]
+ggplot(df,aes(x=Group,y=score,fill=Group))+guides(fill='none')+
+  geom_boxplot()+theme_bw()+
+  scale_x_discrete(limits=c('N\nN=21','LCIS\nN=13','LCIS->LC\nN=22'))+
+  stat_compare_means(method='wilcox.test',comparisons = my_comparisons)+
+  xlab('')+ylab('EpiCMIT_hypo')+
+  annotate('text',x=2,y=0.58,label=paste0('P(Age-adjusted)=',signif(y,2)))
+```
+
+# Tutorial Example 2: TCGA Liver hepatocellular carcinoma (LIHC)
+Mitotic age and cell-of-origin fraction can both be indicator of cancer risk. In this example, we check if the mitotic age is correlated with cell-of-origin fraction of LIHC (which is hepatocyte). The hepatocyte fraction provided is estimated with EpiSCORE algorithm (Teschendorff et al. 2020, Zhu et al. 2022).
+```{r}
+data("LIHC")
+age.v<-as.numeric(pheno.df$age_at_initial_pathologic_diagnosis)
+EpiMitClocks.o2<-EpiMitClocks(data.m = lihcbmiq.m, ages.v = age.v)
+df<-data.frame('epiTOC3'=EpiMitClocks.o2$epiTOC3$irS,
+               'epiTOC2'=EpiMitClocks.o2$epiTOC2$irS,
+               'epiTOC1'=EpiMitClocks.o2$epiTOC1,
+               'HypoClock'=EpiMitClocks.o2$HypoClock,
+               'RepliTali'=EpiMitClocks.o2$RepliTali,
+               'EpiCMIT_hyper'=EpiMitClocks.o2$EpiCMIT_Hyper,
+               'EpiCMIT_hypo'=EpiMitClocks.o2$EpiCMIT_Hypo,
+               'stemTOCvitro'=EpiMitClocks.o2$stemTOCvitro,
+               'stemTOC'=EpiMitClocks.o2$stemTOC,
+               'Frac'=frac.m[,3])  # hepatocyte fraction
+  
+g<-list()
+for (i in 1:9){
+  temp.df<-data.frame('Score'=df[,i],
+                      'Frac'=df$Frac)
+  g[[i]]<-ggplot(temp.df,aes(x=Frac,y=Score))+
+      geom_point(size=0.5)+theme_bw()+xlab('Hepatocyte_Frac')+ylab(colnames(df)[i])+
+      stat_cor(color='darkred',size=3)+ggtitle('LIHC N=379')
+    
+}
+    
+marrangeGrob(g,layout_matrix = matrix(1:9,nrow=3,ncol=3,byrow = T),top = NULL)
+
+```
+
+
+```{r sessionInfo, echo=FALSE}
+sessionInfo()
+```
