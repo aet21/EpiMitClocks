@@ -5,7 +5,7 @@ author:
   affiliation: 
   - CAS Key Lab of Computational Biology, PICB, SINH
 date: "2023-5-25"
-package: EpiMitClocks
+package: EpiMitClocks_0.1.0
 output:
   BiocStyle::html_document:
     toc_float: true
@@ -15,7 +15,7 @@ output:
 
 # Summary
 
-The purpose of the `EpiMitClocks` R-package is to provide functions for estimating the mitotic age of tissues from a corresponding DNA methylation (DNAm) profile. These functions are epigenetic mitotic clocks, providing separate mitotic age estimates on scales unique to each clock. So each estimate should be interpreted as a relative mitotic age, not an absolute one, except for the epiTOC2 clock which does aim to estimate the total number of stem-cell divisions in a tissue. Current version of the R-package, estimates mitotic age according to epiTOC, epiTOC2, HypoClock, RepliTali, epiCMIT and stemTOC.
+The purpose of the `EpiMitClocks` R-package is to provide functions for estimating the mitotic age of tissues from a corresponding DNA methylation (DNAm) profile. These functions are epigenetic mitotic clocks, providing separate mitotic age estimates on scales unique to each clock. So each estimate should be interpreted as a relative mitotic age, not an absolute one, except for the epiTOC2 clock which does aim to estimate the total number of stem-cell divisions in a tissue. Current version of the R-package, estimates mitotic age according to the following mitotic clocks: epiTOC, epiTOC2, HypoClock, RepliTali, epiCMIT and stemTOC. EpiMitClocks has been installed and tested on Ubuntu running R-version 4.3.1 and Windows10 running R-version 4.1.1 .
 
 # Installation
 
@@ -25,7 +25,8 @@ To install:
 library(devtools)
 devtools::install_github("aet21/EpiMitClocks")
 ```
-
+Alternatively, download the EpiMitClocks-master.zip file from the Code-link above and
+install locally from within R.
 
 # References
 
